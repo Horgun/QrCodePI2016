@@ -24,7 +24,7 @@ def GetCode():
 		imgCaixa = img[meioH-TAM:meioH+TAM, meioV-TAM:meioV+TAM]	# Get read line content
 		imgCaixa = cv.cvtColor(imgCaixa, cv.COLOR_BGR2GRAY)
 		ret, imgCaixa = cv.threshold(imgCaixa, 127, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
-		kernel = np.ones((5,5),np.uint8)
+		kernel = np.ones((3,3),np.uint8)
 		imgCaixa = cv.morphologyEx(imgCaixa, cv.MORPH_OPEN, kernel)
 		imgEscura = img.copy()
 		cv.convertScaleAbs(img, imgEscura, 1.0/2, 0)
@@ -35,14 +35,13 @@ def GetCode():
 		screenCnt = []
 		for c in contours:
 			peri = cv.arcLength(c, True)
-			approx = cv.approxPolyDP(c, 0.021 * peri, True)
+			approx = cv.approxPolyDP(c, 0.018 * peri, True)
 			if len(approx) == 4:
 				screenCnt.append(approx)
 				if len(screenCnt) == 3:
 					break
 		img2 = img[meioH-TAM:meioH+TAM,meioV-TAM:meioV+TAM]
-		print screenCnt
-		cv.drawContours(img2, screenCnt, -1, (0,255,0), 2)
+		cv.drawContours(img2, screenCnt, -1, (0,255,0), 1)
 		imgEscura = cv.flip(imgEscura, 1)
 		cv.imshow("QrCode Reader", imgEscura)
 		cv.imshow("QrCode", imgCaixa)
