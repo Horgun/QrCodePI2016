@@ -1,5 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#Alunos: Johnata Rodrigo Pinheiro Montanher, Paulo Henrique Silva de Arruda, Sávio Soares Meira, Vicente Antonio da Conceição Junior
+
 import cv2 as cv
 import numpy as np
 import time
@@ -65,12 +68,10 @@ def getPositionMarkers(s):
 			contador = 0
 			c = 0
 			for x in s:
-				print c, p, abs(result - x.width)
 				if c >= p:
 					if abs(result - x.width) < 5:
 						if contador < 3:
 							contador = contador + 1
-							print i
 							mesmoTamanho[i].append(x)
 						if contador >= 3:
 							p += 1
@@ -87,19 +88,6 @@ def getPositionMarkers(s):
 					c += 1
 				else:
 					c += 1
-
-		
-	for i in [7, 5, 3]:
-		print "Modulo " + str(i) + " ["
-		if i == 7:
-			i = 0
-		elif i == 5:
-			i = 1
-		elif i == 3:
-			i = 2 
-		for x in mesmoTamanho[i]:
-			print x
-		print "]"
 
 	if (len(mesmoTamanho[0]) == 3 and len(mesmoTamanho[1]) == 3):
 		razao = mesmoTamanho[0][0].width / mesmoTamanho[1][0].width
@@ -125,39 +113,24 @@ def GetCode():
 
 	while not canClose():
 		ret, img = cap.read()
-		#img  = cv.medianBlur(img, 3)
 		imgCaixa = img[meioH-TAM:meioH+TAM, meioV-TAM:meioV+TAM]#pega o pedaço da imagem que será analisado
 		imgCaixa = cv.cvtColor(imgCaixa, cv.COLOR_BGR2GRAY)#converte para escala de cinza
 		ret, imgCaixa = cv.threshold(imgCaixa, 127, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)#realiza o limiar
 		kernel = np.ones((3,3),np.uint8)#cria o kernel
 		imgCaixa = cv.morphologyEx(imgCaixa, cv.MORPH_OPEN, kernel)#Faz erosion e dilation
-		# imgCaixa = cv.erode(imgCaixa, kernel)#Faz erosion e dilation
-		# imgCaixa = cv.dilate(imgCaixa, kernel)#Faz erosion e dilation
-		imgEscura = img.copy()#imagem para fazer a parte escura q é exibida
-		cv.convertScaleAbs(img, imgEscura, 1.0/2, 0)#faz a imagem ficar escura
-		imgEscura[meioH-TAM:meioH+TAM,meioV-TAM:meioV+TAM] = img[meioH-TAM:meioH+TAM,meioV-TAM:meioV+TAM]#recupera apenas a parte que deve ficar clara na exibição e coloca na imagem escura
 		
 		screenCnt, imgBorders, squares = getSquares(imgCaixa)
 
-		# for x in squares:
-		# 	print x
-
-
 		modules = getPositionMarkers(squares)
 		if modules != -1:
-			print "Modulo 7 ",len(modules[0]), "[ "
-			for x in modules[0]:
-				print x
-			print "]"
 			x = modules[0].pop(0)
 			y = modules[0].pop(0)
 			z = modules[0].pop(0)
-			
 
 			p1 = [x.x1 + x.width/2, x.y1 + x.width/2, x.width]
 			p2 = [y.x1 + y.width/2, y.y1 + y.width/2, y.width]
 			p3 = [z.x1 + z.width/2, z.y1 + z.width/2, z.width]
-			print p1, p2, p3
+
 			Dp1p2 = math.sqrt(math.pow((p1[0]-p2[0]),2) + math.pow((p1[1]-p2[1]),2))
 			Dp1p3 = math.sqrt(math.pow((p1[0]-p3[0]),2) + math.pow((p1[1]-p3[1]),2))
 			Dp2p1 = Dp1p2
@@ -208,27 +181,30 @@ def GetCode():
 				bottomLeft = ponto3
 				topRight = ponto2
 
-			r = 300/(Dzinho + topLeft[2])
 			pts1 = np.float32([[topLeft[0], topLeft[1]], [bottomLeft[0], bottomLeft[1]], [topRight[0], topRight[1]]])
-			pts2 = np.float32([[0+r*topLeft[2]/2,0+r*topLeft[2]/2],[0+r*bottomLeft[2]/2,300-r*bottomLeft[2]/2],[300-r*topRight[2]/2,0+r*topRight[2]/2]])
+			pts2 = np.float32([[16,16],[16,84],[84,16]])
 
 			M = cv.getAffineTransform(pts1,pts2)
-			dst = cv.warpAffine(img[meioH-TAM:meioH+TAM, meioV-TAM:meioV+TAM],M,(300,300))
 
-			cv.imshow("Registro", dst)			
-			# cv.waitKey(0)
+			imgRegistro = img[meioH-TAM:meioH+TAM, meioV-TAM:meioV+TAM]
+			imgRegistro = cv.warpAffine(imgRegistro,M,(100,100))
+			imgRegistro = cv.cvtColor(imgRegistro, cv.COLOR_BGR2GRAY)#converte para escala de cinza
+			ret, imgRegistro = cv.threshold(imgRegistro, 127, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)#Binarizar imagem
 
+			cv.imshow("Registro", imgRegistro)
+
+		imgEscura = img.copy()#imagem para fazer a parte escura q é exibida
+		cv.convertScaleAbs(img, imgEscura, 1.0/2, 0)#faz a imagem ficar escura
+		
 		img2 = img[meioH-TAM:meioH+TAM,meioV-TAM:meioV+TAM]
 		cv.drawContours(img2, screenCnt, -1, (0,255,0), 1)#desenha os contornos
+
+		imgEscura[meioH-TAM:meioH+TAM,meioV-TAM:meioV+TAM] = img2
 		imgEscura = cv.flip(imgEscura, 1)
 		cv.imshow("QrCode Reader", imgEscura)
-		cv.imshow("QrCode", imgCaixa)
-		cv.imshow("Contornos", imgBorders)
-		cv.imshow("Contornos2", img2)
 
 	cap.release()
 	cv.destroyAllWindows()
-	return ""
 
-if __name__ == "__main__":
-	print GetCode()
+
+GetCode()
